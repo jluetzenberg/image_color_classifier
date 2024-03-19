@@ -18,6 +18,25 @@ def map_lab_to_icc(lab_values):
     # Placeholder: return the input LAB values for now
     return lab_values
 
+def hist_weighed_average(hist):
+    """returns weighted averages of the colors in the histogram. based on https://stackoverflow.com/questions/7563315/how-to-loop-over-histogram-to-get-the-color-of-the-picture/7564929#7564929"""
+    red_hist = hist[0]
+    green_hist = hist[1]
+    blue_hist = hist[2]
+
+    red_weighed_sum = float(sum(i * red_hist[i] for i in range(len(red_hist))))
+    green_weighed_sum = float(sum(i * green_hist[i] for i in range(len(green_hist))))
+    blue_weighed_sum = float(sum(i * blue_hist[i] for i in range(len(blue_hist))))
+
+    red_num_pixels = float(sum(red_hist))
+    green_num_pixels = float(sum(green_hist))
+    blue_num_pixels = float(sum(blue_hist))
+
+    red_weighed_average = red_weighed_sum / red_num_pixels
+    green_weighed_average = green_weighed_sum / green_num_pixels
+    blue_weighed_average = blue_weighed_sum / blue_num_pixels
+    return red_weighed_average, green_weighed_average, blue_weighed_average
+
 def image_to_lab_histogram(image_path:str) -> list:
     image = Image.open(image_path).convert('RGB')
     srgb_prof = ImageCms.createProfile('sRGB')
@@ -26,7 +45,8 @@ def image_to_lab_histogram(image_path:str) -> list:
     lab = ImageCms.applyTransform(image, rgb2lab)
     return [x.histogram() for x in lab.split()]
 
-def raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
+def generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
+    """Generates a CSV of the LAB histograms"""
     header = ["pre_left_L", "pre_left_a", "pre_left_b"]
     rows=[]
     if prr and len(prr) > 0:
@@ -54,6 +74,46 @@ def raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> 
     writer.writerows(rows)
     csv_file.close()
 
+def generate_final_report(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
+    """Creates the averages output for usage in analysis"""
+    fname=output_file+"_summary.csv"
+    headers=["id", "desc", "avgL", "avgA", "avgB"]
+    rows=[]
+    id=1
+    l, a, b = hist_weighed_average(prl)
+    rows.append([id, "Pre-op left-side", l, a, b])
+    id+=1
+    if pol and len(pol) > 0:
+        prel, prea, preb = hist_weighed_average(prr)
+        for i in range(len(pol)):
+            pol_h=pol[i]
+            l, a, b = hist_weighed_average(pol_h)
+            rows.append([id, f"Post-op {i + 1} left-side", l, a, b])
+            id+=1
+            rows.append([id, f"Difference Post-op {i + 1} left-side vs Pre-op left side", l-prel, a-prea, b-preb])
+            id+=1
+
+    if prr and len(prr)>0:
+        l, a, b = hist_weighed_average(prr)
+        rows.append([id, "Pre-op right-side", l, a, b])
+        id+=1
+    if por and len(por) > 0:
+        prel, prea, preb = hist_weighed_average(prr)
+        for i in range(len(por)):
+            por_h=por[i]
+            l, a, b = hist_weighed_average(por_h)
+            rows.append([id, f"Post-op {i + 1} right-side", l, a, b])
+            id+=1
+            rows.append([id, f"Difference Post-op {i + 1} right-side vs Pre-op right side", l-prel, a-prea, b-preb])
+            id+=1
+    csv_file = open(fname, 'w')
+    writer = csv.writer(csv_file)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    csv_file.close()
+
+
+
 
 
 
@@ -66,7 +126,8 @@ def main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
         post_l_hist = [image_to_lab_histogram(x) for x in post_l]
     if post_r:
         post_r_hist = [image_to_lab_histogram(x) for x in post_r]
-    raw_output(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
+    generate_raw_output(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
+    generate_final_report(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
 
     # Map LAB values to ICC standard colors
     #icc_colors = [map_lab_to_icc(lab) for lab in lab_histogram]
