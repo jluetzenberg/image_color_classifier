@@ -60,10 +60,10 @@ def adjust_average_for_channel(average, channel):
         return average / 2.55
     return average
 
-def average_value_from_histogram(hist: list, value_shift: int = 0):
+def average_value_from_histogram(hist: list):
     """Returns the average value of the colors in the histogram. based on """
     num_pixels = float(sum(hist))
-    weighted_sum = float(sum((i + value_shift) * hist[i] for i in range(len(hist))))
+    weighted_sum = float(sum(i * hist[i] for i in range(len(hist))))
     weighted_avg = weighted_sum / num_pixels
     weighted_avg = weighted_avg# * 255#/2.55#adjust_average_for_channel(weighted_avg, "LAB")
     print(f"num_pixels: {num_pixels}, weighed_sum: {weighted_sum}, weighed_average: {weighted_avg}")
@@ -76,14 +76,12 @@ def lab_hist_weighed_average(hist):
     a_hist = hist[1]
     b_hist = hist[2]
 
-    l_weighed_average = average_value_from_histogram(l_hist)# / 2.55
-    a_weighed_average = average_value_from_histogram(a_hist)# - 128
-    b_weighed_average = average_value_from_histogram(b_hist)# - 128
+    l_weighed_average = average_value_from_histogram(l_hist)
+    # The a and b channels should range from -128 to 127, but the histogram
+    # values are from 0 to 255. We need to adjust the values to be centered
+    a_weighed_average = average_value_from_histogram(a_hist) - 128
+    b_weighed_average = average_value_from_histogram(b_hist) - 128
 
-    # Apply logic found in research paper to the averages
-    l_weighed_average = l_weighed_average/2.55
-    a_weighed_average = a_weighed_average/2.55# - 128
-    b_weighed_average = b_weighed_average/2.55# - 128
     return l_weighed_average, a_weighed_average, b_weighed_average
 
 def image_to_lab_histogram(image_path:str) -> list:
