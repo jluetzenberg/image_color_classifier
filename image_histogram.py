@@ -13,31 +13,6 @@ import termplotlib as tpl
 from argparse import ArgumentParser
 import csv
 
-import cv2
-from colormath.color_objects import LabColor, sRGBColor
-from colormath.color_conversions import convert_color
-import numpy as np
-def rgb_to_lab_d50(image):
-    # Convert image from BGR (OpenCV's default) to RGB
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # Normalize to [0, 1]
-    image_rgb_norm = image_rgb / 255.0
-    # Convert to Lab color space
-    lab_list = []
-    for row in image_rgb_norm:
-        lab_row = []
-        for pixel in row:
-            # Convert each pixel to sRGBColor object
-            rgb_pixel = sRGBColor(pixel[0], pixel[1], pixel[2], is_upscaled=True)
-            # Convert to LabColor object using D50 illuminant
-            lab_pixel = convert_color(rgb_pixel, LabColor, target_illuminant='d50')
-            # Append to row
-            lab_row.append([lab_pixel.lab_l, lab_pixel.lab_a, lab_pixel.lab_b])
-        # Append row to lab_list
-        lab_list.append(lab_row)
-    # Convert lab_list to numpy array
-    lab_image = np.array(lab_list)
-    return lab_image
 
 def map_lab_to_icc(lab_values):
     """Takes a given LAB value and maps it to the nearest ICC standard color"""
@@ -49,29 +24,17 @@ def map_lab_to_icc(lab_values):
     icc_values = cs.cspace_convert(srgb_values, start={"name": "sRGB"}, end={"name": "ICC"})
     return icc_values
 
-def adjust_average_for_channel(average, channel):
-    """Takes the raw average value for a given color channel and adjusts it based
-    on the type of channel. For example, an RGB image with all pixels set to #FF0000
-    will have an average value of 1 calculated from the histogram. This function converts
-    that value to the appropirate color value, 255."""
-    if channel == "RGB":
-        return average * 255
-    if channel == "LAB":
-        return average / 2.55
-    return average
-
 def average_value_from_histogram(hist: list):
-    """Returns the average value of the colors in the histogram. based on """
+    """Returns the average value of the colors in the histogram."""
     num_pixels = float(sum(hist))
     weighted_sum = float(sum(i * hist[i] for i in range(len(hist))))
     weighted_avg = weighted_sum / num_pixels
-    weighted_avg = weighted_avg# * 255#/2.55#adjust_average_for_channel(weighted_avg, "LAB")
-    print(f"num_pixels: {num_pixels}, weighed_sum: {weighted_sum}, weighed_average: {weighted_avg}")
     return weighted_avg
 
 def lab_hist_weighed_average(hist):
-    """returns weighted averages of the colors in the histogram. based on
-    https://stackoverflow.com/questions/7563315/how-to-loop-over-histogram-to-get-the-color-of-the-picture/7564929#7564929"""
+    """Returns the weighed average of the LAB values in the histogram. Accounts
+    for different representations of the different channels. L is 0-100, a and b
+    are -128 to 127."""
     l_hist = hist[0]
     a_hist = hist[1]
     b_hist = hist[2]
@@ -82,7 +45,7 @@ def lab_hist_weighed_average(hist):
     a_weighed_average = average_value_from_histogram(a_hist) - 128
     b_weighed_average = average_value_from_histogram(b_hist) - 128
 
-    return l_weighed_average, a_weighed_average, b_weighed_average
+    return round(l_weighed_average, 2), round(a_weighed_average, 2), round(b_weighed_average, 2)
 
 def image_to_lab_histogram(image_path:str) -> list:
     image = Image.open(image_path).convert('RGB')
@@ -91,11 +54,6 @@ def image_to_lab_histogram(image_path:str) -> list:
     rgb2lab = ImageCms.buildTransformFromOpenProfiles(srgb_prof, lab_prof, "RGB", "LAB")
     lab = ImageCms.applyTransform(image, rgb2lab)
     return [x.histogram() for x in lab.split()]
-    #return [x.histogram() for x in image.split()]
-
-
-
-
 
 def generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
     """Generates a CSV of the LAB histograms"""
@@ -163,11 +121,6 @@ def generate_final_report(prl: list, prr: list, pol: list, por: list, output_fil
     writer.writerow(headers)
     writer.writerows(rows)
     csv_file.close()
-
-
-
-
-
 
 def main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
     pre_l_hist, pre_r_hist, post_l_hist, post_r_hist = [], [], [], []
