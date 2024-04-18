@@ -1,4 +1,11 @@
 #! ./env/bin/python
+
+"""Program that takes a set of images and generates histograms of the LAB values
+of the images. The histograms are then saved to a CSV file for further analysis.
+The program also generates a summary CSV file that contains the average LAB
+values of the images and the difference between the pre-op and post-op images."""
+
+
 from PIL import Image, ImageCms
 import colorspacious as cs
 import matplotlib.pyplot as plt
@@ -6,44 +13,91 @@ import termplotlib as tpl
 from argparse import ArgumentParser
 import csv
 
-def rgb_to_lab(rgb_values):
-    lab_values = cs.cspace_convert(rgb_values, start={"name": "sRGB"}, end={"name": "CIELab"})
-    return lab_values
+import cv2
+from colormath.color_objects import LabColor, sRGBColor
+from colormath.color_conversions import convert_color
+import numpy as np
+def rgb_to_lab_d50(image):
+    # Convert image from BGR (OpenCV's default) to RGB
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # Normalize to [0, 1]
+    image_rgb_norm = image_rgb / 255.0
+    # Convert to Lab color space
+    lab_list = []
+    for row in image_rgb_norm:
+        lab_row = []
+        for pixel in row:
+            # Convert each pixel to sRGBColor object
+            rgb_pixel = sRGBColor(pixel[0], pixel[1], pixel[2], is_upscaled=True)
+            # Convert to LabColor object using D50 illuminant
+            lab_pixel = convert_color(rgb_pixel, LabColor, target_illuminant='d50')
+            # Append to row
+            lab_row.append([lab_pixel.lab_l, lab_pixel.lab_a, lab_pixel.lab_b])
+        # Append row to lab_list
+        lab_list.append(lab_row)
+    # Convert lab_list to numpy array
+    lab_image = np.array(lab_list)
+    return lab_image
 
 def map_lab_to_icc(lab_values):
-    # Implement your mapping logic to ICC standard colors here
-    # This will depend on the specific ICC standard you are referring to
-    # You might need additional libraries or specifications for ICC color mapping
+    """Takes a given LAB value and maps it to the nearest ICC standard color"""
+    # Take array of LAB values and map them to ICC standard colors
+    # ICC standard colors are defined in the sRGB color space
+    # Convert LAB to sRGB
+    srgb_values = cs.cspace_convert(lab_values, start={"name": "CIELab"}, end={"name": "sRGB"})
+    # Convert sRGB to ICC standard colors
+    icc_values = cs.cspace_convert(srgb_values, start={"name": "sRGB"}, end={"name": "ICC"})
+    return icc_values
 
-    # Placeholder: return the input LAB values for now
-    return lab_values
+def adjust_average_for_channel(average, channel):
+    """Takes the raw average value for a given color channel and adjusts it based
+    on the type of channel. For example, an RGB image with all pixels set to #FF0000
+    will have an average value of 1 calculated from the histogram. This function converts
+    that value to the appropirate color value, 255."""
+    if channel == "RGB":
+        return average * 255
+    if channel == "LAB":
+        return average / 2.55
+    return average
 
-def hist_weighed_average(hist):
-    """returns weighted averages of the colors in the histogram. based on https://stackoverflow.com/questions/7563315/how-to-loop-over-histogram-to-get-the-color-of-the-picture/7564929#7564929"""
-    red_hist = hist[0]
-    green_hist = hist[1]
-    blue_hist = hist[2]
+def average_value_from_histogram(hist: list, value_shift: int = 0):
+    """Returns the average value of the colors in the histogram. based on """
+    num_pixels = float(sum(hist))
+    weighted_sum = float(sum((i + value_shift) * hist[i] for i in range(len(hist))))
+    weighted_avg = weighted_sum / num_pixels
+    weighted_avg = weighted_avg# * 255#/2.55#adjust_average_for_channel(weighted_avg, "LAB")
+    print(f"num_pixels: {num_pixels}, weighed_sum: {weighted_sum}, weighed_average: {weighted_avg}")
+    return weighted_avg
 
-    red_weighed_sum = float(sum(i * red_hist[i] for i in range(len(red_hist))))
-    green_weighed_sum = float(sum(i * green_hist[i] for i in range(len(green_hist))))
-    blue_weighed_sum = float(sum(i * blue_hist[i] for i in range(len(blue_hist))))
+def lab_hist_weighed_average(hist):
+    """returns weighted averages of the colors in the histogram. based on
+    https://stackoverflow.com/questions/7563315/how-to-loop-over-histogram-to-get-the-color-of-the-picture/7564929#7564929"""
+    l_hist = hist[0]
+    a_hist = hist[1]
+    b_hist = hist[2]
 
-    red_num_pixels = float(sum(red_hist))
-    green_num_pixels = float(sum(green_hist))
-    blue_num_pixels = float(sum(blue_hist))
+    l_weighed_average = average_value_from_histogram(l_hist)# / 2.55
+    a_weighed_average = average_value_from_histogram(a_hist)# - 128
+    b_weighed_average = average_value_from_histogram(b_hist)# - 128
 
-    red_weighed_average = red_weighed_sum / red_num_pixels
-    green_weighed_average = green_weighed_sum / green_num_pixels
-    blue_weighed_average = blue_weighed_sum / blue_num_pixels
-    return red_weighed_average, green_weighed_average, blue_weighed_average
+    # Apply logic found in research paper to the averages
+    l_weighed_average = l_weighed_average/2.55
+    a_weighed_average = a_weighed_average/2.55# - 128
+    b_weighed_average = b_weighed_average/2.55# - 128
+    return l_weighed_average, a_weighed_average, b_weighed_average
 
 def image_to_lab_histogram(image_path:str) -> list:
     image = Image.open(image_path).convert('RGB')
     srgb_prof = ImageCms.createProfile('sRGB')
-    lab_prof = ImageCms.createProfile('LAB')
+    lab_prof = ImageCms.createProfile('LAB', 6500)
     rgb2lab = ImageCms.buildTransformFromOpenProfiles(srgb_prof, lab_prof, "RGB", "LAB")
     lab = ImageCms.applyTransform(image, rgb2lab)
     return [x.histogram() for x in lab.split()]
+    #return [x.histogram() for x in image.split()]
+
+
+
+
 
 def generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
     """Generates a CSV of the LAB histograms"""
@@ -80,28 +134,28 @@ def generate_final_report(prl: list, prr: list, pol: list, por: list, output_fil
     headers=["id", "desc", "avgL", "avgA", "avgB"]
     rows=[]
     id=1
-    l, a, b = hist_weighed_average(prl)
+    l, a, b = lab_hist_weighed_average(prl)
     rows.append([id, "Pre-op left-side", l, a, b])
     id+=1
     if pol and len(pol) > 0:
-        prel, prea, preb = hist_weighed_average(prr)
+        prel, prea, preb = lab_hist_weighed_average(prr)
         for i in range(len(pol)):
             pol_h=pol[i]
-            l, a, b = hist_weighed_average(pol_h)
+            l, a, b = lab_hist_weighed_average(pol_h)
             rows.append([id, f"Post-op {i + 1} left-side", l, a, b])
             id+=1
             rows.append([id, f"Difference Post-op {i + 1} left-side vs Pre-op left side", l-prel, a-prea, b-preb])
             id+=1
 
     if prr and len(prr)>0:
-        l, a, b = hist_weighed_average(prr)
+        l, a, b = lab_hist_weighed_average(prr)
         rows.append([id, "Pre-op right-side", l, a, b])
         id+=1
     if por and len(por) > 0:
-        prel, prea, preb = hist_weighed_average(prr)
+        prel, prea, preb = lab_hist_weighed_average(prr)
         for i in range(len(por)):
             por_h=por[i]
-            l, a, b = hist_weighed_average(por_h)
+            l, a, b = lab_hist_weighed_average(por_h)
             rows.append([id, f"Post-op {i + 1} right-side", l, a, b])
             id+=1
             rows.append([id, f"Difference Post-op {i + 1} right-side vs Pre-op right side", l-prel, a-prea, b-preb])
