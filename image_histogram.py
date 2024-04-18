@@ -76,7 +76,7 @@ def lab_hist_weighed_average(hist):
     a_hist = hist[1]
     b_hist = hist[2]
 
-    l_weighed_average = average_value_from_histogram(l_hist)
+    l_weighed_average = average_value_from_histogram(l_hist) / 2.55
     # The a and b channels should range from -128 to 127, but the histogram
     # values are from 0 to 255. We need to adjust the values to be centered
     a_weighed_average = average_value_from_histogram(a_hist) - 128
