@@ -5,24 +5,12 @@ of the images. The histograms are then saved to a CSV file for further analysis.
 The program also generates a summary CSV file that contains the average LAB
 values of the images and the difference between the pre-op and post-op images."""
 
-
 from PIL import Image, ImageCms
 import colorspacious as cs
 import matplotlib.pyplot as plt
 import termplotlib as tpl
 from argparse import ArgumentParser
 import csv
-
-
-def map_lab_to_icc(lab_values):
-    """Takes a given LAB value and maps it to the nearest ICC standard color"""
-    # Take array of LAB values and map them to ICC standard colors
-    # ICC standard colors are defined in the sRGB color space
-    # Convert LAB to sRGB
-    srgb_values = cs.cspace_convert(lab_values, start={"name": "CIELab"}, end={"name": "sRGB"})
-    # Convert sRGB to ICC standard colors
-    icc_values = cs.cspace_convert(srgb_values, start={"name": "sRGB"}, end={"name": "ICC"})
-    return icc_values
 
 def average_value_from_histogram(hist: list):
     """Returns the average value of the colors in the histogram."""
@@ -31,7 +19,7 @@ def average_value_from_histogram(hist: list):
     weighted_avg = weighted_sum / num_pixels
     return weighted_avg
 
-def lab_hist_weighed_average(hist):
+def lab_hist_weighed_average(hist, ndigits=2):
     """Returns the weighed average of the LAB values in the histogram. Accounts
     for different representations of the different channels. L is 0-100, a and b
     are -128 to 127."""
@@ -45,9 +33,11 @@ def lab_hist_weighed_average(hist):
     a_weighed_average = average_value_from_histogram(a_hist) - 128
     b_weighed_average = average_value_from_histogram(b_hist) - 128
 
-    return round(l_weighed_average, 2), round(a_weighed_average, 2), round(b_weighed_average, 2)
+    return round(l_weighed_average, ndigits), round(a_weighed_average, ndigits), round(b_weighed_average, ndigits)
 
 def image_to_lab_histogram(image_path:str) -> list:
+    """Opens the specified image and converts it to the LAB color space. Returns
+    a list of histograms for each channel."""
     image = Image.open(image_path).convert('RGB')
     srgb_prof = ImageCms.createProfile('sRGB')
     lab_prof = ImageCms.createProfile('LAB', 6500)
@@ -55,7 +45,7 @@ def image_to_lab_histogram(image_path:str) -> list:
     lab = ImageCms.applyTransform(image, rgb2lab)
     return [x.histogram() for x in lab.split()]
 
-def generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
+def __generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
     """Generates a CSV of the LAB histograms"""
     header = ["pre_left_L", "pre_left_a", "pre_left_b"]
     rows=[]
@@ -84,7 +74,7 @@ def generate_raw_output(prl: list, prr: list, pol: list, por: list, output_file:
     writer.writerows(rows)
     csv_file.close()
 
-def generate_final_report(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
+def __generate_final_report(prl: list, prr: list, pol: list, por: list, output_file: str) -> list:
     """Creates the averages output for usage in analysis"""
     fname=output_file+"_summary.csv"
     headers=["id", "desc", "avgL", "avgA", "avgB"]
@@ -122,7 +112,7 @@ def generate_final_report(prl: list, prr: list, pol: list, por: list, output_fil
     writer.writerows(rows)
     csv_file.close()
 
-def main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
+def __main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
     pre_l_hist, pre_r_hist, post_l_hist, post_r_hist = [], [], [], []
     pre_l_hist = image_to_lab_histogram(pre_l)
     if pre_r:
@@ -131,20 +121,12 @@ def main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
         post_l_hist = [image_to_lab_histogram(x) for x in post_l]
     if post_r:
         post_r_hist = [image_to_lab_histogram(x) for x in post_r]
-    generate_raw_output(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
-    generate_final_report(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
-
-    # Map LAB values to ICC standard colors
-    #icc_colors = [map_lab_to_icc(lab) for lab in lab_histogram]
-
-    # Visualize the results or perform further processing as needed
-    # Example: plot ICC colors
-    # plt.scatter(range(len(icc_colors)), icc_colors, marker='.')
-    # plt.show()
+    __generate_raw_output(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
+    __generate_final_report(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="")
-    parser.add_argument("--preop-left",
+    parser = ArgumentParser(description="Generates histograms and average values in the CIELAB color space for a set of images. Intended to be used for pre-op and post-op images of patients undergoing surgery, the average values specifically may be compared to quantify differences in bilateral bruising. May be used with a single photograph or with a complete set of pre and post-op photographs.")
+    parser.add_argument("--preop-left", "-p",
         help="Left-side pre-op photograph",
         required=True)
     parser.add_argument("--output", "-o",
@@ -154,10 +136,10 @@ if __name__ == "__main__":
         help="Right-side pre-op photograph")
     parser.add_argument("--postop-left",
         nargs="+",
-        help="Left-side post-op photographs.")
+        help="Left-side post-op photographs. When using more than one, ensure that the images are in the correct order in both this and the --postop-right argument.")
     parser.add_argument("--postop-right",
         nargs="+",
-        help="Right-side post-op photographs")
+        help="Right-side post-op photographs. When using more than one, ensure that the images are in the correct order in both this and the --postop-left argument.")
 
     args = parser.parse_args()
-    main(args.preop_left, args.preop_right, args.postop_left, args.postop_right, args.output)
+    __main(args.preop_left, args.preop_right, args.postop_left, args.postop_right, args.output)
