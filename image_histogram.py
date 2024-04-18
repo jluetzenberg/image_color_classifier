@@ -26,7 +26,6 @@ def lab_hist_weighed_average(hist, ndigits=2):
     l_hist = hist[0]
     a_hist = hist[1]
     b_hist = hist[2]
-
     l_weighed_average = average_value_from_histogram(l_hist) / 2.55
     # The a and b channels should range from -128 to 127, but the histogram
     # values are from 0 to 255. We need to adjust the values to be centered
@@ -34,6 +33,22 @@ def lab_hist_weighed_average(hist, ndigits=2):
     b_weighed_average = average_value_from_histogram(b_hist) - 128
 
     return round(l_weighed_average, ndigits), round(a_weighed_average, ndigits), round(b_weighed_average, ndigits)
+
+def rgb_hist_weighed_average(hist, ndigits=2):
+    """Returns the weighed average of the RGB values in the histogram."""
+    r_hist = hist[0]
+    g_hist = hist[1]
+    b_hist = hist[2]
+    r_weighed_average = average_value_from_histogram(r_hist)
+    g_weighed_average = average_value_from_histogram(g_hist)
+    b_weighed_average = average_value_from_histogram(b_hist)
+    return round(r_weighed_average, ndigits), round(g_weighed_average, ndigits), round(b_weighed_average, ndigits)
+
+def image_to_rgb_histogram(image_path:str) -> list:
+    """Opens the specified image and returns a list of histograms for each
+    channel in the RGB color space."""
+    image = Image.open(image_path).convert('RGB')
+    return [x.histogram() for x in image.split()]
 
 def image_to_lab_histogram(image_path:str) -> list:
     """Opens the specified image and converts it to the LAB color space. Returns
@@ -112,7 +127,8 @@ def __generate_final_report(prl: list, prr: list, pol: list, por: list, output_f
     writer.writerows(rows)
     csv_file.close()
 
-def __main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
+def __cli_main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
+    """Entry point for the CLI"""
     pre_l_hist, pre_r_hist, post_l_hist, post_r_hist = [], [], [], []
     pre_l_hist = image_to_lab_histogram(pre_l)
     if pre_r:
@@ -142,4 +158,4 @@ if __name__ == "__main__":
         help="Right-side post-op photographs. When using more than one, ensure that the images are in the correct order in both this and the --postop-left argument.")
 
     args = parser.parse_args()
-    __main(args.preop_left, args.preop_right, args.postop_left, args.postop_right, args.output)
+    __cli_main(args.preop_left, args.preop_right, args.postop_left, args.postop_right, args.output)
