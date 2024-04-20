@@ -91,7 +91,24 @@ class ImageDataRow(QtWidgets.QWidget):
         self.layout.addWidget(self.test_image_cell)
 
         self.setMaximumHeight(150)
-        self.setStyleSheet("border-bottom: 10px solid black;")
+
+        self.add_delete_button()
+        self.layout.addWidget(self.delete_button)
+        self.layout.setAlignment(QtCore.Qt.AlignBottom)
+
+    def add_delete_button(self):
+        """Adds a delete button to the row. When clicked, the row will be deleted."""
+        self.delete_button = QtWidgets.QPushButton()
+        pixmapi = getattr(QtWidgets.QStyle, "SP_TitleBarCloseButton")
+        icon = self.style().standardIcon(pixmapi)
+        self.delete_button.setIcon(icon)
+        self.delete_button.setFixedSize(2*icon.availableSizes()[0])
+        self.delete_button.setStyleSheet("background-color: red")
+        self.delete_button.clicked.connect(self.delete_row)
+    
+    def delete_row(self):
+        """Deletes the row from the list of rows."""
+        self.deleteLater()
 
     def is_complete(self):
         """Returns True if both the control and test images have been added."""
@@ -122,6 +139,28 @@ class ImageColorClassifier(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
+        self.add_scrollable_rows()
+
+        self.rows = []
+        self.add_row()
+        
+        # Create a horizontal layout for the buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        
+        self.add_row_button = QtWidgets.QPushButton("Add Row")
+        self.add_row_button.clicked.connect(self.add_row)
+        button_layout.addWidget(self.add_row_button)
+
+        self.generate_report_button = QtWidgets.QPushButton("Generate Report")
+        self.generate_report_button.clicked.connect(self.generate_report)
+        button_layout.addWidget(self.generate_report_button)
+        
+        # Add the button layout to the main layout
+        self.layout.addLayout(button_layout)
+
+    def add_scrollable_rows(self):
+        """Adds a scrollable area to the window where rows of image data can be
+        added."""
         self.scroll_area = QtWidgets.QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
@@ -131,16 +170,6 @@ class ImageColorClassifier(QtWidgets.QWidget):
         self.scroll_area_widget.setLayout(self.scroll_area_layout)
         self.scroll_area.setWidget(self.scroll_area_widget)
         self.layout.addWidget(self.scroll_area)
-
-        self.rows = []
-        self.add_row()
-        self.add_row_button = QtWidgets.QPushButton("Add Row")
-        self.add_row_button.clicked.connect(self.add_row)
-        self.layout.addWidget(self.add_row_button)
-
-        self.generate_report_button = QtWidgets.QPushButton("Generate Report")
-        self.generate_report_button.clicked.connect(self.generate_report)
-        self.layout.addWidget(self.generate_report_button)
 
     @QtCore.Slot()
     def add_row(self):
