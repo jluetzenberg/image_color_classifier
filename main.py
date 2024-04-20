@@ -156,10 +156,11 @@ class ImageDataRow(QtWidgets.QWidget):
     def add_delete_button(self):
         """Adds a delete button to the row. When clicked, the row will be deleted."""
         self.delete_button = QtWidgets.QPushButton()
-        pixmapi = getattr(QtWidgets.QStyle, "SP_TitleBarCloseButton")
+        pixmapi = getattr(QtWidgets.QStyle, "SP_TrashIcon")
         icon = self.style().standardIcon(pixmapi)
         self.delete_button.setIcon(icon)
-        self.delete_button.setFixedSize(2*icon.availableSizes()[0])
+        #self.delete_button.setFixedSize(2*icon.availableSizes()[0])
+        self.delete_button.setFixedSize(25,25)
         self.delete_button.setStyleSheet("background-color: red")
         self.delete_button.clicked.connect(self.delete_row)
     

@@ -1,5 +1,5 @@
+"""Simple script to show all the icons available in PySide6.QtWidgets.QStyle."""
 import sys
-
 from PySide6.QtWidgets import QApplication, QGridLayout, QPushButton, QStyle, QWidget
 
 
