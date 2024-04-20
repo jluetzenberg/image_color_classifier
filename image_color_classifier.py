@@ -1,4 +1,9 @@
-"""Provides a GUI for classifying images based on their color. The user can load multiple images related to a surgery into the gui and classify them as pre-op or post-op. The program will then generate histograms of the LAB values of the images and save them to a CSV file for further analysis. The program also generates a summary CSV file that contains the average LAB values of the images and the difference between the pre-op and post-op images."""
+"""Provides a GUI for classifying images based on their color. The user can load
+multiple images related to a surgery into the gui and classify them as pre-op or
+post-op. The program will then generate histograms of the LAB values of the
+images and save them to a CSV file for further analysis. The program also
+generates a summary CSV file that contains the average LAB values of the images
+and the difference between the pre-op and post-op images."""
 
 from PySide6 import QtCore, QtWidgets, QtGui
 
