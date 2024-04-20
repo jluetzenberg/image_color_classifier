@@ -19,6 +19,9 @@ from image_histogram import image_to_lab_histogram, lab_hist_weighed_average
 class ImageDataCell(QtWidgets.QWidget):
     """A cell for the image data. Contains a label for the image and a button to
     add an image. Can be classified as either a control or test image."""
+
+    image_loaded = QtCore.Signal(dict)
+
     def __init__(self, image_class:str = "control"):
         super().__init__()
 
@@ -29,20 +32,16 @@ class ImageDataCell(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
+        # add a text label to the layout indicating what class of image this represents
+        self.label = QtWidgets.QLabel(f"{image_class.capitalize()} Image:")
+        self.layout.addWidget(self.label)
+
         self.image_path = None
         self.image_label = self.__create_image_picker_label()
         self.layout.addWidget(self.image_label)
 
     def __create_image_picker_label(self):
         """Creates a label for selecting an image. When no image is selected, the label will display the SP_TitleBarContextHelpButton icon. When an image is selected, the label will display a thumbnail of the image. The user can click on the label to select an image."""
-
-        #label = QtWidgets.QLabel()
-        #label.setFixedSize(100, 100)
-        #label.setStyleSheet("border: 1px solid black")
-
-        #pixmapi = getattr(QtWidgets.QStyle, "SP_TitleBarCloseButton")
-        #label.setPixmap(pixmapi)
-        #label.mousePressEvent = self.add_image
         label = QtWidgets.QPushButton()
         pixmapi = getattr(QtWidgets.QStyle, "SP_TitleBarContextHelpButton")
         icon = self.style().standardIcon(pixmapi)
@@ -73,9 +72,13 @@ class ImageDataCell(QtWidgets.QWidget):
         self.image_label.setIconSize(QtCore.QSize(100,100))
         self.image_histogram = image_to_lab_histogram(image_path)
         self.image_averages = lab_hist_weighed_average(self.image_histogram)
+        self.image_loaded.emit({ "img": self.image_path, "averages": self.image_averages})
 
 class RowLabelCell(QtWidgets.QWidget):
-    """A cell for the row label. Contains a QLineEdit widget for the user to assign a label to the row."""
+    """A cell for the row label and summary. Contains a QLineEdit widget for the
+    user to assign a label to the row. Contains a grid showing the average LAB
+    values for the control and test images and the difference between the
+    two."""
     def __init__(self):
         super().__init__()
 
@@ -86,8 +89,41 @@ class RowLabelCell(QtWidgets.QWidget):
         self.layout.addWidget(self.label)
         self.textbox = QtWidgets.QLineEdit()
         self.layout.addWidget(self.textbox)
-        self.layout.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
+        self.layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
         self.setMaximumWidth(200)
+        self.control_averages = []
+        self.test_averages = []
+        self.summary = QtWidgets.QGridLayout()
+        self.layout.addLayout(self.summary)
+        self.update_summary()
+
+    def set_control_image_averages(self, event: dict):
+        """Sets the average LAB values for the control image."""
+        self.control_averages = event["averages"]
+        self.update_summary()
+
+    def set_test_image_averages(self, event: dict):
+        """Sets the average LAB values for the test image."""
+        self.test_averages = event["averages"]
+        self.update_summary()
+
+    def update_summary(self):
+        """Shows a simple grid with the average LAB values for the control and test images"""
+        # clear the existing summary
+        for i in reversed(range(self.summary.count())):
+            widget = self.summary.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        self.summary.addWidget(QtWidgets.QLabel("Control"), 0, 1)
+        self.summary.addWidget(QtWidgets.QLabel("Test"), 0, 2)
+        self.summary.addWidget(QtWidgets.QLabel("L*"), 1, 0)
+        self.summary.addWidget(QtWidgets.QLabel("a*"), 2, 0)
+        self.summary.addWidget(QtWidgets.QLabel("b*"), 3, 0)
+        for i, value in enumerate(self.control_averages):
+            self.summary.addWidget(QtWidgets.QLabel(str(value)), i+1, 1)
+        for i, value in enumerate(self.test_averages):
+            self.summary.addWidget(QtWidgets.QLabel(str(value)), i+1, 2)
+
 
 class ImageDataRow(QtWidgets.QWidget):
     """A row for the image data. Contains three cells; one for assigning a label to the data set and two ImageDataCells. """
@@ -102,9 +138,11 @@ class ImageDataRow(QtWidgets.QWidget):
         self.layout.addWidget(self.label)
 
         self.control_image_cell = ImageDataCell("control")
+        self.control_image_cell.image_loaded.connect(self.label.set_control_image_averages)
         self.layout.addWidget(self.control_image_cell)
 
         self.test_image_cell = ImageDataCell("test")
+        self.test_image_cell.image_loaded.connect(self.label.set_test_image_averages)
         self.layout.addWidget(self.test_image_cell)
 
         self.setMaximumHeight(150)
@@ -151,7 +189,8 @@ class ImageColorClassifier(QtWidgets.QWidget):
         self.setWindowTitle("Image Color Classifier")
 
         # set default size of the window to 800x600
-        self.resize(800, 600)
+        self.resize(550, 600)
+        self.setFixedWidth(550)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
@@ -221,6 +260,5 @@ class ImageColorClassifier(QtWidgets.QWidget):
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
     window = ImageColorClassifier()
-    window.setMaximumWidth(550)
     window.show()
     app.exec()
