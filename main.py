@@ -13,8 +13,10 @@ contains the average LAB values of the images and the difference between the
 control and test images."""
 
 from PySide6 import QtCore, QtWidgets, QtGui
-
-from image_histogram import image_to_lab_histogram, lab_hist_weighed_average
+import sys
+from image_histogram import image_to_lab_histogram, lab_hist_weighed_average, handle_cli
+import os
+import platform
 
 class ImageDataCell(QtWidgets.QWidget):
     """A cell for the image data. Contains a label for the image and a button to
@@ -85,7 +87,7 @@ class RowLabelCell(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.label = QtWidgets.QLabel("Row Label:")
+        self.label = QtWidgets.QLabel("Label:")
         self.layout.addWidget(self.label)
         self.textbox = QtWidgets.QLineEdit()
         self.layout.addWidget(self.textbox)
@@ -257,7 +259,31 @@ class ImageColorClassifier(QtWidgets.QWidget):
                 for row in csv_output:
                     f.write(",".join([str(x) for x in row]) + "\n")
 
+        # show the user a dialog indicating that the report has been generated and offering to open the containing folder
+        dialog = QtWidgets.QMessageBox()
+        dialog.setWindowTitle("Generated")
+        dialog.setText("The report has been generated.")
+        dialog.setInformativeText("Would you like to open the containing folder?")
+        dialog.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+        dialog.setDefaultButton(QtWidgets.QMessageBox.Yes)
+        result = dialog.exec()
+        
+        if result == QtWidgets.QMessageBox.Yes:
+            folder_path = os.path.dirname(output_file)
+            system = platform.system()
+            if system == "Linux":
+                os.system(f'xdg-open "{folder_path}"')
+            elif system == "Darwin":  # macOS
+                os.system(f'open "{folder_path}"')
+            elif system == "Windows":
+                os.system(f'start "" "{folder_path}"')
+
+
+
 if __name__ == "__main__":
+    # if any arguments were passed in, call the CLI handler
+    if len(sys.argv) > 1:
+        handle_cli()
     app = QtWidgets.QApplication([])
     window = ImageColorClassifier()
     window.show()

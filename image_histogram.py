@@ -140,7 +140,7 @@ def __cli_main(pre_l: str, pre_r: str, post_l: list, post_r: list, output: str):
     __generate_raw_output(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
     __generate_final_report(pre_l_hist, pre_r_hist, post_l_hist, post_r_hist, output)
 
-if __name__ == "__main__":
+def handle_cli():
     parser = ArgumentParser(description="Generates histograms and average values in the CIELAB color space for a set of images. Intended to be used for pre-op and post-op images of patients undergoing surgery, the average values specifically may be compared to quantify differences in bilateral bruising. May be used with a single photograph or with a complete set of pre and post-op photographs.")
     parser.add_argument("--preop-left", "-p",
         help="Left-side pre-op photograph",
@@ -159,3 +159,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     __cli_main(args.preop_left, args.preop_right, args.postop_left, args.postop_right, args.output)
+
+if __name__ == "__main__":
+    handle_cli()
