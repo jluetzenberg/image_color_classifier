@@ -13,17 +13,12 @@ contains the average LAB values of the images and the difference between the
 control and test images."""
 
 from PySide6 import QtCore, QtWidgets, QtGui
-import csv
-import os
-from PIL import Image, ImageCms
-import colorspacious as cs
-import matplotlib.pyplot as plt
-import termplotlib as tpl
 
 from image_histogram import image_to_lab_histogram, lab_hist_weighed_average
 
 class ImageDataCell(QtWidgets.QWidget):
-    """A cell for the image data. Contains a label for the image and a button to add an image. Can be classified as either a control or test image."""
+    """A cell for the image data. Contains a label for the image and a button to
+    add an image. Can be classified as either a control or test image."""
     def __init__(self, image_class:str = "control"):
         super().__init__()
 
@@ -48,9 +43,16 @@ class ImageDataCell(QtWidgets.QWidget):
         if image_path:
             self.load_image(image_path)
 
-    def load_image(self, image_path):
-        self.image_path = image_path
+    def get_image_thumbnail(self, image_path):
+        """Returns a thumbnail of the image at the specified path, using the QPixmap class."""
         image = QtGui.QPixmap(image_path)
+        return image.scaled(100, 100, QtCore.Qt.KeepAspectRatio)
+
+    def load_image(self, image_path):
+        """Loads the image from the specified path and updates the image label.
+        Also generates the LAB histogram and averages."""
+        self.image_path = image_path
+        image = self.get_image_thumbnail(image_path)
         self.image_label.setPixmap(image)
         self.image_histogram = image_to_lab_histogram(image_path)
         self.image_averages = lab_hist_weighed_average(self.image_histogram)
@@ -63,11 +65,15 @@ class RowLabelCell(QtWidgets.QWidget):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
-        self.label = QtWidgets.QLineEdit()
+        self.label = QtWidgets.QLabel("Row Label:")
         self.layout.addWidget(self.label)
+        self.textbox = QtWidgets.QLineEdit()
+        self.layout.addWidget(self.textbox)
+        self.layout.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignLeft)
+        self.setMaximumWidth(200)
 
 class ImageDataRow(QtWidgets.QWidget):
-    """A row for the image data. Contains three cells; one for assigning a label to the data set and two ImageDataCells."""
+    """A row for the image data. Contains three cells; one for assigning a label to the data set and two ImageDataCells. """
 
     def __init__(self):
         super().__init__()
@@ -84,7 +90,11 @@ class ImageDataRow(QtWidgets.QWidget):
         self.test_image_cell = ImageDataCell("test")
         self.layout.addWidget(self.test_image_cell)
 
+        self.setMaximumHeight(150)
+        self.setStyleSheet("border-bottom: 10px solid black;")
+
     def is_complete(self):
+        """Returns True if both the control and test images have been added."""
         return self.control_image_cell.image_path and self.test_image_cell.image_path
     
 class ImageColorClassifier(QtWidgets.QWidget):
@@ -105,6 +115,10 @@ class ImageColorClassifier(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Image Color Classifier")
+
+        # set default size of the window to 800x600
+        self.resize(800, 600)
+
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -142,4 +156,4 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
     window = ImageColorClassifier()
     window.show()
-    app.exec_()
+    app.exec()
