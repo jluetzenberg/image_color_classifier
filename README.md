@@ -13,9 +13,9 @@ $ pyinstaller --onefile main.py
 
 ```bash
 $ sudo zypper install wine
-$ wget https://www.python.org/ftp/python/3.9.5/python-3.9.5.exe
-$ wine python-3.9.5.exe
-$ wine ~/.wine/drive_c/users/jeff/AppData/Local/Programs/Python/Python39-32/python.exe -m pip install -r requirements.txt
+$ wget https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe
+$ wine python-3.9.13-amd64.exe
+$ wine python -m pip install -r requirements.txt
 $ wine ~/.wine/drive_c/users/jeff/AppData/Local/Programs/Python/Python39-32/Scripts/pyinstaller.exe --onefile main.py
 ```
 

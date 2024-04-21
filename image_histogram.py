@@ -6,9 +6,6 @@ The program also generates a summary CSV file that contains the average LAB
 values of the images and the difference between the pre-op and post-op images."""
 
 from PIL import Image, ImageCms
-import colorspacious as cs
-import matplotlib.pyplot as plt
-import termplotlib as tpl
 from argparse import ArgumentParser
 import csv
 
@@ -162,3 +159,4 @@ def handle_cli():
 
 if __name__ == "__main__":
     handle_cli()
+    
