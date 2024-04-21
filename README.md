@@ -1,3 +1,76 @@
+# ImageColorClassifier
+
+The ImageColorClassifier is a GUI or CLI application used to generate average
+channel values for a set of images in the CIELAB color space. The objective is
+to provide a framework for objectively measuring color differences between a
+control and expirement photo set, specifically to quantify the effect of various
+treatment methodologies on post-operative bruising. 
+
+# Running
+
+## From Source
+
+### Prerequisits
+* Python 3 should be installed on your system
+
+### Setup your environment
+Linux: 
+
+```bash
+$ python3 -m venv env
+$ source env/bin/activate
+(env) $ pip install -r requirements.txt
+```
+
+Windows: 
+```cmd
+> python -m venv env
+> env\Scripts\activate.bat
+(env) > pip install -r requirements
+```
+
+### Execution
+
+To run the full GUI application, simply execute:
+```bash
+(env) $ python ImageColorClassifier.py
+```
+
+## From Release
+
+The releases section will contain compiled single-file executables. These can be
+run directly from your file explorer or executed from the command line. In
+either case, the GUI will launche allowing you to load images for analysis.
+
+## CLI Execution
+The program also provides a CLI, though there are some differences in the report
+generation between the two interfaces. The CLI can be invoked from the terminal
+by passing arguments to the executable or python script. When no arguments are
+passed, the GUI is launched instead.
+
+### Single image analysis
+```bash
+$ python image_histogram.py -p path-to-image -o output-name
+```
+
+This command will generate two output files:
+
+**output-name_summary.csv**
+
+Calculated averages for the channels. 
+|id|desc|avgL|avgA|avgB|
+|--|----|----|----|----|
+|1|Pre-op left-side|38.35|14.0|9.74|
+
+The averages for the a and b channels are calculated by multiplying the value in
+each bucket of the histogram by that bucket's index. This number is then divided
+by the total number of pixels to get the average value. Both channels have
+values ranging from -128 to 127, but the index values will be between 0 and
+255. To get the actual average value then, we subtract 128 from the initial
+result.
+
+
+
 # Building
 
 This program was built on the OpenSUSE operating system, but is intended to run
