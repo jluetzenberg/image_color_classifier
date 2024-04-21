@@ -92,7 +92,7 @@ class RowLabelCell(QtWidgets.QWidget):
         self.textbox = QtWidgets.QLineEdit()
         self.layout.addWidget(self.textbox)
         self.layout.setAlignment(QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft)
-        self.setMaximumWidth(200)
+        #self.setMaximumWidth(275)
         self.control_averages = []
         self.test_averages = []
         self.summary = QtWidgets.QGridLayout()
@@ -190,10 +190,12 @@ class ImageColorClassifier(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Image Color Classifier")
+        icon = QtGui.QIcon.fromTheme("image-x-generic")
+        self.setWindowIcon(icon)
 
         # set default size of the window to 800x600
-        self.resize(550, 600)
-        self.setFixedWidth(550)
+        self.resize(600, 600)
+        self.setFixedWidth(600)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
