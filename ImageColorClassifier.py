@@ -14,7 +14,7 @@ control and test images."""
 
 from PySide6 import QtCore, QtWidgets, QtGui
 import sys
-from image_histogram import image_to_lab_histogram, lab_hist_weighed_average, handle_cli
+from utils import image_to_lab_histogram, lab_hist_weighed_average, handle_cli
 import os
 import platform
 

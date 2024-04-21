@@ -1,23 +1,18 @@
 # Building
 
-## For linux, on linux
-```bash
-$ pyinstaller --onefile main.py
-```
-## For windows, on linux
-
-1. Install wine
-2. Use wine to install python for windows
-3. Install PyInstaller under wine
-4. Use PyInstaller to create the app
+This program was built on the OpenSUSE operating system, but is intended to run
+on Windows. To create a Windows executable from the Linux environment, the
+following commands are required.
 
 ```bash
 $ sudo zypper install wine
 $ wget https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe
 $ wine python-3.9.13-amd64.exe
 $ wine python -m pip install -r requirements.txt
-$ wine ~/.wine/drive_c/users/jeff/AppData/Local/Programs/Python/Python39-32/Scripts/pyinstaller.exe --onefile main.py
+$ wine pyinstaller --onefile ImageColorClassifier.py
 ```
+
+This will create a window executable in `./dist/ImageColorClassifier.exe`. 
 
 
 # image_histogram
