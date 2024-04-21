@@ -1,3 +1,25 @@
+# Building
+
+## For linux, on linux
+```bash
+$ pyinstaller --onefile main.py
+```
+## For windows, on linux
+
+1. Install wine
+2. Use wine to install python for windows
+3. Install PyInstaller under wine
+4. Use PyInstaller to create the app
+
+```bash
+$ sudo zypper install wine
+$ wget https://www.python.org/ftp/python/3.9.5/python-3.9.5.exe
+$ wine python-3.9.5.exe
+$ wine ~/.wine/drive_c/users/jeff/AppData/Local/Programs/Python/Python39-32/python.exe -m pip install -r requirements.txt
+$ wine ~/.wine/drive_c/users/jeff/AppData/Local/Programs/Python/Python39-32/Scripts/pyinstaller.exe --onefile main.py
+```
+
+
 # image_histogram
 The image_histogram module is a stand-alone CLI application for generating
 histogram data about an image or set of images in the CIELAB color space. It
