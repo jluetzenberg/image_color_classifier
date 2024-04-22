@@ -251,8 +251,27 @@ class ImageColorClassifier(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def generate_report(self):
-        """Generates a report of the images. The report will contain average LAB values for the images and the difference between the control and test images. The report will be saved to a CSV file of the user's choice. Each row in the CSV file will contain the following columns: row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b."""
-        # build the csv output
+        """Generates a report of the images. The report will contain average LAB
+        values for the images and the difference between the control and test
+        images. The report will be saved to a CSV file of the user's choice.
+        Each row in the CSV file will contain the following columns: row_label,
+        control_L, control_a, control_b, test_L, test_a, test_b, delta_L,
+        delta_a, delta_b."""
+        csv_output = self.build_csv_data()
+        output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Report", "", "CSV Files (*.csv)")
+        if output_file:
+            if not output_file.endswith(".csv"):
+                output_file += ".csv"
+            with open(output_file, 'w') as f:
+                f.write("row_label,control_L,control_a,control_b,test_L,test_a,test_b,delta_L,delta_a,delta_b\n")
+                for row in csv_output:
+                    f.write(",".join([str(x) for x in row]) + "\n")
+        self.run_open_folder_dialog(output_file)
+
+    def build_csv_data(self):
+        """Builds the CSV data that will be saved to the output file. The CSV
+        data will contain the average LAB values for the control and test
+        images, as well as the difference between the two."""
         csv_output = []
         rows = self.rows();
         for i in range(len(rows)):
@@ -269,17 +288,12 @@ class ImageColorClassifier(QtWidgets.QWidget):
                 delta_a = round(test_a - control_a, 3)
                 delta_b = round(test_b - control_b, 3)
             csv_output.append([row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b])
-        # save the csv output to a file
-        output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Report", "", "CSV Files (*.csv)")
-        if output_file:
-            if not output_file.endswith(".csv"):
-                output_file += ".csv"
-            with open(output_file, 'w') as f:
-                f.write("row_label,control_L,control_a,control_b,test_L,test_a,test_b,delta_L,delta_a,delta_b\n")
-                for row in csv_output:
-                    f.write(",".join([str(x) for x in row]) + "\n")
+        return csv_output
 
-        # show the user a dialog indicating that the report has been generated and offering to open the containing folder
+    def run_open_folder_dialog(self, output_file):
+        """Runs a dialog to ask the user if they would like to open the folder
+        containing the generated report. If the user clicks 'Yes', the folder
+        will be opened."""
         dialog = QtWidgets.QMessageBox()
         dialog.setWindowTitle("Generated")
         dialog.setText("The report has been generated.")
