@@ -17,7 +17,7 @@ either case, the GUI will launch allowing you to load images for analysis.
 ## From Source
 
 ### Prerequisits
-* Python 3 should be installed on your system
+* Python 3 should be installed on your system. On Windows, this should be no later than version 3.9.13, as the PySide6 package is not compatible with version >3.10
 
 ### Setup your environment
 Linux: 
