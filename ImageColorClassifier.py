@@ -202,9 +202,6 @@ class ImageColorClassifier(QtWidgets.QWidget):
 
         self.add_scrollable_rows()
 
-        self.rows = []
-        self.add_row()
-        
         # Create a horizontal layout for the buttons
         button_layout = QtWidgets.QHBoxLayout()
         
@@ -219,6 +216,8 @@ class ImageColorClassifier(QtWidgets.QWidget):
         # Add the button layout to the main layout
         self.layout.addLayout(button_layout)
 
+        self.add_row()
+
     def add_scrollable_rows(self):
         """Adds a scrollable area to the window where rows of image data can be
         added."""
@@ -232,19 +231,32 @@ class ImageColorClassifier(QtWidgets.QWidget):
         self.scroll_area.setWidget(self.scroll_area_widget)
         self.layout.addWidget(self.scroll_area)
 
+    def check_generate_report_should_disable(self):
+        """Whenever a row is removed, check to see if we have any rows. If there
+        are no rows, disable the generate report button"""
+        rows = self.rows()
+        if len(rows) == 0:
+            self.generate_report_button.setDisabled(True)
+
+    def rows(self):
+        """Returns the child widgets of the scroll area"""
+        return self.scroll_area_widget.findChildren(ImageDataRow)
+
     @QtCore.Slot()
     def add_row(self):
         row = ImageDataRow()
-        self.rows.append(row)
+        row.destroyed.connect(self.check_generate_report_should_disable)
         self.scroll_area_layout.addWidget(row)
+        self.generate_report_button.setDisabled(False)
 
     @QtCore.Slot()
     def generate_report(self):
         """Generates a report of the images. The report will contain average LAB values for the images and the difference between the control and test images. The report will be saved to a CSV file of the user's choice. Each row in the CSV file will contain the following columns: row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b."""
         # build the csv output
         csv_output = []
-        for i in range(len(self.rows)):
-            row = self.rows[i]
+        rows = self.rows();
+        for i in range(len(rows)):
+            row = rows[i]
             #if row.is_complete():
             row_label = row.label.textbox.text()
             if not row_label:
