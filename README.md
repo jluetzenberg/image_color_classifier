@@ -47,7 +47,7 @@ To run the full GUI application, simply execute:
 ![Application Start Screen](./img/application_startup.png)
 
 The application will start with a single row of un-labeled, un-populated image
-controls. Clicking the image controls labeled "Control" and "Test" will allow
+controls. Clicking the image controls labeled "Control Image" and "Test Image" will allow
 you to browse for an image file on your local computer. The 'Label' is meant to
 briefly describe the meaning of the two images.
 
@@ -98,7 +98,7 @@ passed, the GUI is launched instead.
 Either of the below lines will work equivalently, depending on whether you are running from the compiled executable or the source script.
 ```bash
 > python image_histogram.py -p path-to-image -o output-name
-> ./ImageColorClassifier.exe -p path-to-image -o output-name
+> .\ImageColorClassifier.exe -p path-to-image -o output-name
 ```
 
 This command will generate two output files:

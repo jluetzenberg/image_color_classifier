@@ -29,7 +29,7 @@ class ImageDataCell(QtWidgets.QWidget):
 
         self.image_class = image_class
         self.image_histogram = None
-        self.image_averages = None
+        self.image_averages = (None, None, None)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
@@ -243,15 +243,20 @@ class ImageColorClassifier(QtWidgets.QWidget):
         """Generates a report of the images. The report will contain average LAB values for the images and the difference between the control and test images. The report will be saved to a CSV file of the user's choice. Each row in the CSV file will contain the following columns: row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b."""
         # build the csv output
         csv_output = []
-        for row in self.rows:
-            if row.is_complete():
-                row_label = row.label.textbox.text()
-                control_L, control_a, control_b = row.control_image_cell.image_averages
-                test_L, test_a, test_b = row.test_image_cell.image_averages
+        for i in range(len(self.rows)):
+            row = self.rows[i]
+            #if row.is_complete():
+            row_label = row.label.textbox.text()
+            if not row_label:
+                row_label = f"Row {i+1}"
+            control_L, control_a, control_b = row.control_image_cell.image_averages
+            test_L, test_a, test_b = row.test_image_cell.image_averages
+            delta_L, delta_a, delta_b = None, None, None
+            if test_L is not None and control_L is not None:
                 delta_L = round(test_L - control_L, 3)
                 delta_a = round(test_a - control_a, 3)
                 delta_b = round(test_b - control_b, 3)
-                csv_output.append([row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b])
+            csv_output.append([row_label, control_L, control_a, control_b, test_L, test_a, test_b, delta_L, delta_a, delta_b])
         # save the csv output to a file
         output_file, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save Report", "", "CSV Files (*.csv)")
         if output_file:
